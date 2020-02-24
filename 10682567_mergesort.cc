@@ -1,85 +1,73 @@
-#include<stdio.h>
-#include<sys/time.h>
-void swap(int *x,int *y)
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
+#include <omp.h>
+void simplemerge(int a[],int low,int mid,int high)
 {
-int temp;
-temp=*x;
-*x=*y;
-*y=temp;
+ int i,j,k,c[10000];
+ i=low;
+ j=mid+1;
+ k=low;
+ int tid;
+ omp_set_num_threads(5);
+ {
+ #pragma omp parallel
+ tid=omp_get_thread_num();
+ #pragma omp while
+ while(i<=mid&&j<=high)
+ {
+ if(a[i]<a[j])
+ {
+ c[k]=a[i];
+i++;
+ k++;
+ }
+ else
+ {
+ c[k]=a[j];
+ j++;
+ k++;
+ }
+for(k=low;k<=high;k++)
+ a[k]=c[k];
 }
-void generate_random(int a[],int n)
-{ int i;
-srand(time(0));
-for(i=0;i<n;i++)
-a[i]=rand()%1000;
-}
-int Partition(int a[10],int l,int h)
+void merge(int a[],int low,int high)
 {
-int i,j,p;
-i=l;j=h+1; p=l;
-do{
-do{
- i=i+1;
-}while(a[i]<a[p]);
-do{
-j=j-1;
-}while(a[j]>a[p]);
-swap(&a[i],&a[j]);
-}while(i<=j);
-swap(&a[i],&a[j]);
-swap(&a[l],&a[j]);
-return j;
+ int mid;
+ if(low<high)
+ {
+ mid=(low+high)/2;
+ merge(a,low,mid);
+ merge(a,mid+1,high);
+ simplemerge(a,low,mid,high);
 }
-int Quicksort(int a[10],int m,int n)
-{
-int s;
-if(m<n+1)
-{
-s=Partition(a,m,n);
-Quicksort(a,m,s-1);
-Quicksort(a,s+1,n);
-return a;
 }
+void getnumber(int a[],int n)
+{
+ int i;
+ for(i=0;i<n;i++)
+ a[i]=rand()%10000;
 }
 int main()
 {
-int a[100000],i,ch,n;
-struct timeval t;
-double start,end;
-FILE *fp;
-printf("Enter the type of operation\n");
-printf("1-Randomly generate numbers and quicksort\n");
-printf("2-Enter the number of values to generate and sort\n");
-scanf("%d",&ch);
-switch(ch)
-{case 1:fp=fopen("quicksort.txt","w");
- for(i=10000;i<100000;i=i+5000)
- {
-generate_random(a,i);
-gettimeofday(&t,NULL);
-start=t.tv_sec+(t.tv_usec/1000000.0);
-Quicksort(a,0,i-1);
-gettimeofday(&t,NULL);
-end=t.tv_sec+(t.tv_usec/1000000.0);
-printf("%d\t%lf\n",i,end-start);
-fprintf(fp,"%d\t%lf\n",i,end-start);
-}
-fclose(fp); break;
-case 2:printf("Enter the number of values to be generated\n");
-scanf("%d",&i);
- generate_random(a,i);
- gettimeofday(&t,NULL);
-start=t.tv_sec+(t.tv_usec/1000000.0);
-Quicksort(a,0,i-1);
-gettimeofday(&t,NULL);
-end=t.tv_sec+(t.tv_usec/1000000.0);
-printf("%d\t%lf\n",i,end-start);
-printf("Sorted numbers are\n");
-printf("The sorted array is\n");
-for(n=0;n<i;n++)
-printf("%d\t",a[n]);
-break;
- default: printf("Invalid choice\n");
-}
-return 0; 
-}
+ FILE *fp;
+ int a[10000],i;
+ struct timeval tv;
+ double start,end,elapse;
+ fp=fopen("m.txt","w");
+ printf("Num. time");
+ for(i=0;i<9999;i+=100)
+{
+ getnumber(a,i);
+ gettimeofday(&tv,NULL);
+ start=tv.tv_sec+(tv.tv_usec/100000.0);
+ merge(a,0,i-1);
+ gettimeofday(&tv,NULL);
+ end=tv.tv_sec+(tv.tv_usec/100000.0);
+ elapse=end-start;
+if(elapse>=0)
+fprintf(fp,"%d\t%lf\n",i,elapse);
+ }
+ fclose(fp);
+ system("gnuplot");
+ return 0; }
